@@ -21,16 +21,24 @@ func (g *G3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Path:   path,
 		})
 		if err != nil {
-			panic(err)
+			w.WriteHeader(500)
+			w.Write([]byte(fmt.Sprintf("%v", err)))
+			return
 		}
 
-		w.WriteHeader(response.StatusCode)
+		w.Header().Add("accept", r.Header.Get("accept"))
+		statusCode := response.StatusCode
+		if statusCode == 0 {
+			statusCode = 200
+		}
+		w.WriteHeader(statusCode)
 		w.Write(response.Body)
+		return
 
-	} else {
-		w.WriteHeader(404)
-		io.WriteString(w, "Not Found :)")
 	}
+
+	w.WriteHeader(404)
+	io.WriteString(w, "Not Found :)")
 }
 
 type Request struct {
