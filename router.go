@@ -115,17 +115,20 @@ func (g3 *G3) runController(r *http.Request) (Response, error) {
 
 	controller := g3.routes[matchedRoute]
 
-	query := r.URL.Query()
-	queryParams := map[string]string{}
-	for index, value := range query {
-		queryParams[index] = value[0]
+	rq := &Request{
+		Method:     r.Method,
+		Path:       r.URL.Path,
+		PathParams: pathParams,
 	}
 
-	rq := &Request{
-		Method:      r.Method,
-		Path:        r.URL.Path,
-		PathParams:  pathParams,
-		QueryParams: queryParams,
+	err := rq.setPostForm(r)
+	if err != nil {
+		return Response{}, err
+	}
+
+	err = rq.setQueryParams(r)
+	if err != nil {
+		return Response{}, err
 	}
 
 	return controller(rq)
