@@ -3,6 +3,7 @@ package g3
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -22,8 +23,6 @@ func (g3 *G3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf("%v", err)))
 		return
 	}
-
-	fmt.Printf("controller %v", controller)
 
 	response, err := controller(&Request{
 		Method: r.Method,
@@ -47,48 +46,119 @@ func (g3 *G3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g3 *G3) addRoute(method, path string, controller Controller) {
-	g3.routes[method+":"+path] = controller
+
+	key := method + ":" + path
+
+	g3.routes[key] = controller
+
+	parts := strings.Split(path, "/")
+
+	for i, part := range parts {
+
+		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
+			param := part[1 : len(part)-1]
+			paramParts := strings.SplitN(param, ":", 2)
+			paramNamePart := paramParts[0]
+
+			if strings.HasSuffix(paramNamePart, "?") {
+
+				optionalParts := append([]string{}, parts[:i]...)
+				optionalParts = append(optionalParts, parts[i+1:]...)
+				optionalPath := strings.Join(optionalParts, "/")
+
+				if optionalPath == "" {
+					optionalPath = "/"
+				}
+
+				optionalKey := method + ":" + optionalPath
+				
+				if _, exists := g3.routes[optionalKey]; !exists {
+					g3.routes[optionalKey] = controller
+				}
+			}
+		}
+	}
 }
 
 func (g3 *G3) getController(r *http.Request) (Controller, error) {
-	fmt.Printf("%v\n", r.Form)
 	method := r.Method
 	path := r.URL.Path
-	fmt.Printf("%v\n", path)
-	fmt.Printf("%v\n", g3.routes)
+	pathParts := strings.Split(strings.Trim(path, "/"), "/")
 
-	//find route with path
-	pathParts := strings.Split(path, "/")
-	fmt.Println(pathParts)
-
-	findRoute := ""
+	var matchedRoute string
+	var pathParams map[string]string
 
 	for route := range g3.routes {
-		routeParts := strings.Split(route, ":")
-		//check method
-		fmt.Println("route parts 0:", routeParts[0])
-		if routeParts[0] != method {
+		routeParts := strings.SplitN(route, ":", 2)
+		if len(routeParts) != 2 {
 			continue
 		}
-		routeWithoutMethod := routeParts[1]
-		routeWithoutMethodParts := strings.Split(routeWithoutMethod, "/")
-		fmt.Println("other route parts :", routeParts)
-		fmt.Println("pathParts :", pathParts)
 
-		if len(pathParts) == len(routeWithoutMethodParts) {
-			findRoute = route
+		routeMethod := routeParts[0]
+		routePattern := routeParts[1]
+
+		if routeMethod != method {
+			continue
+		}
+
+		routePatternParts := strings.Split(strings.Trim(routePattern, "/"), "/")
+		if len(pathParts) != len(routePatternParts) {
+			continue
+		}
+
+		tmpParams := map[string]string{}
+		matched := true
+
+		for i, rp := range routePatternParts {
+			pp := pathParts[i]
+
+			if strings.HasPrefix(rp, "{") && strings.HasSuffix(rp, "}") {
+				paramName := strings.Trim(rp, "{}")
+
+				// regex {id:[0-9]+}
+				if strings.Contains(paramName, ":") {
+					parts := strings.SplitN(paramName, ":", 2)
+					key := parts[0]
+					regex := parts[1]
+
+					if ok, _ := regexp.MatchString("^"+regex+"$", pp); !ok {
+						matched = false
+						break
+					}
+					tmpParams[key] = pp
+				} else {
+					tmpParams[paramName] = pp
+				}
+			} else {
+
+				if rp != pp {
+					matched = false
+					break
+				}
+			}
+		}
+
+		if matched {
+			matchedRoute = route
+			pathParams = tmpParams
+			break
 		}
 	}
 
-	//todo: we should set PathParams if exists
-
-	controller, ok := g3.routes[findRoute]
-	fmt.Printf("%v\n", g3.routes)
-	if ok {
-		return controller, nil
+	if matchedRoute == "" {
+		return nil, fmt.Errorf("not found :)")
 	}
-	return nil, fmt.Errorf("not found :)")
 
+	controller := g3.routes[matchedRoute]
+
+	rq := &Request{
+		Method:     r.Method,
+		Path:       r.URL.Path,
+		PathParams: pathParams,
+	}
+	return func(*Request) (Response, error) {
+		return controller(rq)
+	}, nil
 }
 
 type Request struct {
