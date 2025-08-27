@@ -6,9 +6,10 @@ import (
 )
 
 type G3 struct {
-	Server http.Server
-	Addr   string
-	routes map[string]func(*Request) (Response, error)
+	Server      http.Server
+	Addr        string
+	routes      map[string]func(*Request) (Response, error)
+	path_prefix string
 }
 
 func New(Addr string) *G3 {

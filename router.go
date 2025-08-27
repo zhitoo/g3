@@ -134,27 +134,46 @@ func (g3 *G3) runController(r *http.Request) (Response, error) {
 	return controller(rq)
 }
 
+// route methods
 func (g3 *G3) Get(path string, controller Controller) *G3 {
-	g3.addRoute("GET", path, controller)
+	g3.addRoute("GET", g3.withPrefix(path), controller)
 	return g3
 }
 
 func (g3 *G3) Post(path string, controller Controller) *G3 {
-	g3.addRoute("POST", path, controller)
+	g3.addRoute("POST", g3.withPrefix(path), controller)
 	return g3
 }
 
 func (g3 *G3) Put(path string, controller Controller) *G3 {
-	g3.addRoute("PUT", path, controller)
+	g3.addRoute("PUT", g3.withPrefix(path), controller)
 	return g3
 }
 
 func (g3 *G3) Patch(path string, controller Controller) *G3 {
-	g3.addRoute("PATCH", path, controller)
+	g3.addRoute("PATCH", g3.withPrefix(path), controller)
 	return g3
 }
 
 func (g3 *G3) Delete(path string, controller Controller) *G3 {
-	g3.addRoute("Delete", path, controller)
+	g3.addRoute("Delete", g3.withPrefix(path), controller)
+	return g3
+}
+
+// route grouping
+func (g3 *G3) withPrefix(path string) string {
+	path = g3.path_prefix + path
+	return path
+}
+
+func (g3 *G3) setPrefix(prefix string) {
+	//todo: validate prefix
+	g3.path_prefix += prefix
+}
+
+func (g3 *G3) Group(prefix string, group func()) *G3 {
+	g3.setPrefix(prefix)
+	group()
+	g3.path_prefix = ""
 	return g3
 }
