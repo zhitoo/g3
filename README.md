@@ -19,6 +19,24 @@ import (
 
 func main() {
 	server := g3.New(":5500")
+
+	//middleware
+	g.Use(func(next g3.Controller) g3.Controller {
+		return func(r *g3.Request) (g3.Response, error) {
+			fmt.Println("👉 New Request received")
+			return next(r)
+		}
+	})
+
+	//route group
+	g.Group("/users", func() {
+		g.Get("/", func(r *g3.Request) (g3.Response, error) {
+			response := g3.Response{}
+			response.Body = []byte("All Users")
+			return response, nil
+		})
+	})
+
 	server.Get("/g3/{id?:^[0-9]*$}", func(r *g3.Request) (g3.Response, error) {
 		response := g3.Response{}
 		response.Body = []byte("Hello, G3!")

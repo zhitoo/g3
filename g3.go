@@ -10,6 +10,7 @@ type G3 struct {
 	Addr        string
 	routes      map[string]func(*Request) (Response, error)
 	path_prefix string
+	middlewares []Middleware
 }
 
 func New(Addr string) *G3 {

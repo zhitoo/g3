@@ -9,6 +9,8 @@ import (
 
 type Controller func(*Request) (Response, error)
 
+type Middleware func(Controller) Controller
+
 func (g3 *G3) addRoute(method, path string, controller Controller) {
 
 	key := method + ":" + path
@@ -131,7 +133,13 @@ func (g3 *G3) runController(r *http.Request) (Response, error) {
 		return Response{}, err
 	}
 
+	//run middlewares before run controller
+	for _, m := range g3.middlewares {
+		controller = m(controller)
+	}
+
 	return controller(rq)
+
 }
 
 // route methods
@@ -175,5 +183,11 @@ func (g3 *G3) Group(prefix string, group func()) *G3 {
 	g3.setPrefix(prefix)
 	group()
 	g3.path_prefix = ""
+	return g3
+}
+
+// middleware
+func (g3 *G3) Use(mw Middleware) *G3 {
+	g3.middlewares = append(g3.middlewares, mw)
 	return g3
 }
