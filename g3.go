@@ -3,13 +3,22 @@ package g3
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 )
+
+type group struct {
+	Prefix      string
+	Middlewares []Middleware
+	Regex       *regexp.Regexp
+	ParamNames  []string
+}
 
 type G3 struct {
 	Server      http.Server
 	Addr        string
 	routes      map[string]func(*Request) (Response, error)
 	path_prefix string
+	groups      []group
 	middlewares []Middleware
 }
 

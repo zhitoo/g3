@@ -138,6 +138,22 @@ func (g3 *G3) runController(r *http.Request) (Response, error) {
 		controller = m(controller)
 	}
 
+	for _, group := range g3.groups {
+		if group.Regex.MatchString(path) {
+			matches := group.Regex.FindStringSubmatch(path)
+			if len(matches) > 0 {
+				for i, paramName := range group.ParamNames {
+					if i+1 < len(matches) {
+						rq.PathParams[paramName] = matches[i+1]
+					}
+				}
+			}
+			for _, m := range group.Middlewares {
+				controller = m(controller)
+			}
+		}
+	}
+
 	return controller(rq)
 
 }
@@ -187,7 +203,49 @@ func (g3 *G3) Group(prefix string, group func()) *G3 {
 }
 
 // middleware
+func (g3 *G3) createGroupRegex() ([]string, *regexp.Regexp) {
+	parts := strings.Split(strings.Trim(g3.path_prefix, "/"), "/")
+	var paramNames []string
+	regexPattern := "^"
+	for _, part := range parts {
+		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
+			paramName := strings.Trim(part, "{}")
+			if strings.Contains(paramName, ":") {
+				// {id:[0-9]+}
+				p := strings.SplitN(paramName, ":", 2)
+				paramNames = append(paramNames, p[0])
+				regexPattern += "/" + p[1]
+			} else {
+				// {id}
+				paramNames = append(paramNames, paramName)
+				regexPattern += `/([^/]+)`
+			}
+		} else {
+			regexPattern += "/" + regexp.QuoteMeta(part)
+		}
+	}
+	regexPattern += "(/.*)?$"
+	regex, _ := regexp.Compile(regexPattern)
+	return paramNames, regex
+}
+
 func (g3 *G3) Use(mw Middleware) *G3 {
-	g3.middlewares = append(g3.middlewares, mw)
+	if g3.path_prefix != "" {
+		for i, group := range g3.groups {
+			if group.Prefix == g3.path_prefix {
+				g3.groups[i].Middlewares = append(g3.groups[i].Middlewares, mw)
+				return g3
+			}
+		}
+		paramNames, regex := g3.createGroupRegex()
+		g3.groups = append(g3.groups, group{
+			Prefix:      g3.path_prefix,
+			Regex:       regex,
+			Middlewares: []Middleware{mw},
+			ParamNames:  paramNames,
+		})
+	} else {
+		g3.middlewares = append(g3.middlewares, mw)
+	}
 	return g3
 }
