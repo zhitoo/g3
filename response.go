@@ -91,3 +91,12 @@ func (r *Response) Status() int {
 	}
 	return r.statusCode
 }
+
+func (r *Response) Redirect(url string, code int) *Response {
+	if code < 300 || code > 399 {
+		code = http.StatusFound
+	}
+	r.SetStatusCode(code)
+	r.SetHeader("Location", url)
+	return r
+}

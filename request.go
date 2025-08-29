@@ -56,7 +56,6 @@ func (r *Request) Has(key string) bool {
 
 func (gr *Request) setQueryParams(r *http.Request) error {
 	query := r.URL.Query()
-	fmt.Println("Query Params:", query)
 	queryParams := map[string][]string{}
 	for index, value := range query {
 		queryParams[index] = value
@@ -110,14 +109,12 @@ func (rg *Request) bindFormParams(obj any) error {
 	val := reflect.ValueOf(obj).Elem()
 	typ := val.Type()
 
-	fmt.Println("typ is:", typ)
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
 		tag := field.Tag.Get("form")
 		if tag == "" {
 			tag = field.Name
 		}
-		fmt.Println(tag)
 		if value, exists := rg.PostParams[tag]; exists && len(value) > 0 {
 			if err := setField(val.Field(i), value[0]); err != nil {
 				return fmt.Errorf("Bind: failed to set form param %s: %v", tag, err)
