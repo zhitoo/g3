@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
+	"strconv"
 )
 
 type Request struct {
@@ -80,6 +82,88 @@ func (gr *Request) setPostForm(r *http.Request) error {
 		}
 	}
 	gr.PostParams = postForm
+
+	return nil
+}
+
+func setField(field reflect.Value, value string) error {
+	if !field.CanSet() {
+		return fmt.Errorf("cannot set field")
+	}
+
+	switch field.Kind() {
+	case reflect.String:
+		field.SetString(value)
+	case reflect.Int, reflect.Int64:
+		if val, err := strconv.ParseInt(value, 10, 64); err == nil {
+			field.SetInt(val)
+		} else {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported field type: %v", field.Kind())
+	}
+	return nil
+}
+
+func (rg *Request) bindFormParams(obj any) error {
+	val := reflect.ValueOf(obj).Elem()
+	typ := val.Type()
+
+	fmt.Println("typ is:", typ)
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		tag := field.Tag.Get("form")
+		if tag == "" {
+			tag = field.Name
+		}
+		fmt.Println(tag)
+		if value, exists := rg.PostParams[tag]; exists && len(value) > 0 {
+			if err := setField(val.Field(i), value[0]); err != nil {
+				return fmt.Errorf("Bind: failed to set form param %s: %v", tag, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (rg *Request) bindQueryParams(obj any) error {
+	val := reflect.ValueOf(obj).Elem()
+	typ := val.Type()
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		tag := field.Tag.Get("form")
+		if tag == "" {
+			tag = field.Name
+		}
+		if value, exists := rg.QueryParams[tag]; exists && len(value) > 0 {
+			if err := setField(val.Field(i), value[0]); err != nil {
+				return fmt.Errorf("Bind: failed to set query param %s: %v", tag, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (r *Request) Bind(obj any) error {
+	val := reflect.ValueOf(obj)
+	if val.Kind() != reflect.Ptr || val.IsNil() {
+		return fmt.Errorf("Bind: input must be a non-nil pointer")
+	}
+	if val.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("Bind: input must be a pointer to a struct")
+	}
+
+	if err := r.bindQueryParams(obj); err != nil {
+		return err
+	}
+
+	if r.PostParams != nil {
+		if err := r.bindFormParams(obj); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
