@@ -1,83 +1,93 @@
 package g3
 
+import "net/http"
+
 type Response struct {
 	Body       []byte
-	StatusCode int
-	Header     map[string]string
+	statusCode int
+	header     map[string]string
 }
 
-func (r *Response) SetStatusCode(code int) {
-	r.StatusCode = code
+func (r *Response) SetStatusCode(code int) *Response {
+	r.statusCode = code
+	return r
 }
 
-func (r *Response) SetBody(body []byte) {
+func (r *Response) SetBody(body []byte) *Response {
 	r.Body = body
+	return r
 }
 
 func NewResponse() Response {
-	return Response{
-		StatusCode: 200,
-	}
+	response := Response{}
+	response.SetStatusCode(http.StatusOK)
+	return Response{}
 }
 
-func (r *Response) String(body string) {
+func (r *Response) String(body string) *Response {
 	r.Body = []byte(body)
 	r.SetHeader("Content-Type", "text/plain")
+	return r
 }
 
-func (r *Response) JSON(body []byte) {
+func (r *Response) JSON(body []byte) *Response {
 	r.Body = body
 	r.SetHeader("Content-Type", "application/json")
+	return r
 }
 
-func (r *Response) HTML(body string) {
+func (r *Response) HTML(body string) *Response {
 	r.Body = []byte(body)
 	r.SetHeader("Content-Type", "text/html")
+	return r
 }
 
-func (r *Response) XML(body string) {
+func (r *Response) XML(body string) *Response {
 	r.Body = []byte(body)
 	r.SetHeader("Content-Type", "application/xml")
+	return r
 }
 
-func (r *Response) SetHeader(key, value string) {
-	if r.Header == nil {
-		r.Header = make(map[string]string)
+func (r *Response) SetHeader(key, value string) *Response {
+	if r.header == nil {
+		r.header = make(map[string]string)
 	}
-	r.Header[key] = value
+	r.header[key] = value
+	return r
 }
 
 func (r *Response) GetHeader(key string) string {
-	if r.Header == nil {
+	if r.header == nil {
 		return ""
 	}
-	return r.Header[key]
+	return r.header[key]
 }
 
 func (r *Response) DelHeader(key string) {
-	if r.Header == nil {
+	if r.header == nil {
 		return
 	}
-	delete(r.Header, key)
+	delete(r.header, key)
 }
 
-func (r *Response) ClearHeaders() {
-	if r.Header == nil {
-		return
+func (r *Response) ClearHeaders() *Response {
+	if r.header == nil {
+		return r
 	}
-	r.Header = make(map[string]string)
+	r.header = make(map[string]string)
+	return r
 }
 
 func (r *Response) Headers() map[string]string {
-	if r.Header == nil {
+	if r.header == nil {
 		return make(map[string]string)
 	}
-	return r.Header
+	return r.header
 }
 
 func (r *Response) Status() int {
-	if r.StatusCode == 0 {
+	if r.statusCode == 0 {
 		return 200
 	}
-	return r.StatusCode
+	return r.statusCode
 }
