@@ -47,8 +47,23 @@ func (g3 *G3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("accept", r.Header.Get("accept"))
 	statusCode := response.statusCode
+
+	//add response headers to w
+	for key, value := range response.header {
+		w.Header().Add(key, value)
+	}
+
+	if statusCode > 300 && statusCode < 399 {
+		if location, ok := response.header["Location"]; ok {
+			println(location)
+			http.Redirect(w, r, location, statusCode) // 302
+			return
+		}
+	}
+
+	w.Header().Add("accept", r.Header.Get("accept"))
+
 	if statusCode == 0 {
 		statusCode = http.StatusOK
 	}

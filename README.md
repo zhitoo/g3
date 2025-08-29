@@ -37,7 +37,7 @@ func main() {
 		})
 	})
 
-	server.Get("/g3/{id?:^[0-9]*$}", func(r *g3.Request) (g3.Response, error) {
+	g.Get("/g3/{id?:^[0-9]*$}", func(r *g3.Request) (g3.Response, error) {
 		response := g3.Response{}
 		response.Body = []byte("Hello, G3!")
 		return response, nil
@@ -48,6 +48,16 @@ func main() {
 		return response, nil
 
 	})
+
+	//redirect
+	g.Get("/hello/{name}", func(r *g3.Request) (g3.Response, error) {
+		response := g3.Response{}
+
+		response.Redirect("/" + r.PathParams["name"], 301)
+
+		return response, nil
+	})
+
 	log.Fatal(server.Serve())
 }
 
