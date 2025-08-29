@@ -42,15 +42,15 @@ func (g3 *G3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	response, err := g3.runController(r)
 	if err != nil {
 		//todo: check for validation error or any other type of error
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(fmt.Sprintf("%v", err)))
 		return
 	}
 
 	w.Header().Add("accept", r.Header.Get("accept"))
-	statusCode := response.StatusCode
+	statusCode := response.statusCode
 	if statusCode == 0 {
-		statusCode = 200
+		statusCode = http.StatusOK
 	}
 	w.WriteHeader(statusCode)
 	w.Write(response.Body)
