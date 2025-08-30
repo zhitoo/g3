@@ -18,34 +18,34 @@ func (r *Response) SetBody(body []byte) *Response {
 	return r
 }
 
-func NewResponse() Response {
+func NewResponse() *Response {
 	response := Response{}
 	response.SetStatusCode(http.StatusOK)
-	return Response{}
+	return &Response{}
 }
 
-func (r *Response) String(body string) *Response {
+func (r *Response) String(body string) Response {
 	r.Body = []byte(body)
 	r.SetHeader("Content-Type", "text/plain")
-	return r
+	return *r
 }
 
-func (r *Response) JSON(body []byte) *Response {
+func (r *Response) JSON(body []byte) Response {
 	r.Body = body
 	r.SetHeader("Content-Type", "application/json")
-	return r
+	return *r
 }
 
-func (r *Response) HTML(body string) *Response {
+func (r *Response) HTML(body string) Response {
 	r.Body = []byte(body)
 	r.SetHeader("Content-Type", "text/html")
-	return r
+	return *r
 }
 
-func (r *Response) XML(body string) *Response {
+func (r *Response) XML(body string) Response {
 	r.Body = []byte(body)
 	r.SetHeader("Content-Type", "application/xml")
-	return r
+	return *r
 }
 
 func (r *Response) SetHeader(key, value string) *Response {
