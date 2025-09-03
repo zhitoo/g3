@@ -106,8 +106,6 @@ func setField(field reflect.Value, value string) error {
 }
 
 func (rg *Request) bindFormParams(obj any) error {
-	fmt.Println("bindFormParams", reflect.ValueOf(obj))
-	fmt.Println("PostParams:", rg.PostParams)
 	val := reflect.ValueOf(obj).Elem()
 	typ := val.Type()
 
