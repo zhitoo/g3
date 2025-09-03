@@ -116,8 +116,26 @@ func (rg *Request) bindFormParams(obj any) error {
 			tag = field.Name
 		}
 		if value, exists := rg.PostParams[tag]; exists && len(value) > 0 {
-			if err := setField(val.Field(i), value[0]); err != nil {
-				return fmt.Errorf("Bind: failed to set form param %s: %v", tag, err)
+			fv := val.Field(i)
+			fmt.Println("fv", fv)
+
+			if fv.Kind() == reflect.Slice {
+				sliceType := fv.Type().Elem()
+				slice := reflect.MakeSlice(fv.Type(), 0, len(value))
+
+				for _, v := range value {
+					elem := reflect.New(sliceType).Elem()
+					if err := setField(elem, v); err != nil {
+						return fmt.Errorf("Bind: failed to set slice param %s: %v", tag, err)
+					}
+					slice = reflect.Append(slice, elem)
+				}
+
+				fv.Set(slice)
+			} else {
+				if err := setField(fv, value[0]); err != nil {
+					return fmt.Errorf("Bind: failed to set form param %s: %v", tag, err)
+				}
 			}
 		}
 	}
