@@ -1,6 +1,8 @@
 package g3
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -42,6 +44,19 @@ func (g3 *G3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	response, err := g3.runController(r)
 	if err != nil {
 		//todo: check for validation error or any other type of error
+		w.WriteHeader(response.statusCode)
+		var validationError ValidationError
+		if errors.As(err, &validationError) {
+			jsonResp, er := json.Marshal(validationError)
+			if er != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(fmt.Sprintf("%v", er)))
+			}
+			response.Body = jsonResp
+			w.Write(response.Body)
+			return
+		}
+
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(fmt.Sprintf("%v", err)))
 		return
