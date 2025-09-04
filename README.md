@@ -57,6 +57,40 @@ func main() {
 
 		return response, nil
 	})
+	g.Post("/", func(r *g3.Request) (g3.Response, error) {
+		res := g3.Response{}
+
+		r.AddValidation("name", func(r *g3.Request) (bool, string) {
+			value, ok := r.PostParams["name"]
+			if ok {
+				if len(value[0]) < 5 {
+					return false, "name must at least be 5 chars"
+				}
+			} else {
+				return false, "name is required"
+			}
+			return true, ""
+		})
+
+		err := r.Validate()
+		if err != nil {
+			res.SetStatusCode(422)
+			return res, err
+		}
+
+		user := User{}
+		err = r.Bind(&user)
+		if err != nil {
+			res.Body = []byte(err.Error())
+			res.SetStatusCode(400)
+			return res, nil
+		}
+		fmt.Printf("User: %+v\n", user)
+
+		res.Body = []byte("Hello World!!! POST")
+		res.SetStatusCode(201)
+		return res, nil
+	})
 
 	log.Fatal(server.Serve())
 }

@@ -9,11 +9,20 @@ import (
 )
 
 type Request struct {
-	Method      string
-	Path        string
-	PathParams  map[string]string
-	QueryParams map[string][]string
-	PostParams  map[string][]string
+	Method           string
+	Path             string
+	PathParams       map[string]string
+	QueryParams      map[string][]string
+	PostParams       map[string][]string
+	ValidationErrors map[string][]string
+}
+
+type ValidationError struct {
+	ValidationErrors map[string][]string `json:"validation_errors"`
+}
+
+func (v ValidationError) Error() string {
+	return "validation error"
 }
 
 func (r *Request) Get(name string) string {
@@ -117,8 +126,6 @@ func (rg *Request) bindFormParams(obj any) error {
 		}
 		if value, exists := rg.PostParams[tag]; exists && len(value) > 0 {
 			fv := val.Field(i)
-			fmt.Println("fv", fv)
-
 			if fv.Kind() == reflect.Slice {
 				sliceType := fv.Type().Elem()
 				slice := reflect.MakeSlice(fv.Type(), 0, len(value))
@@ -180,5 +187,31 @@ func (r *Request) Bind(obj any) error {
 		}
 	}
 
+	return nil
+}
+
+func (r *Request) AddValidation(name string, rule func(r *Request) (bool, string)) {
+	validationError, ok := r.ValidationErrors[name]
+	if !ok {
+		r.ValidationErrors = map[string][]string{}
+		ok, message := rule(r)
+		if !ok {
+			r.ValidationErrors[name] = []string{message}
+		}
+	} else {
+		ok, message := rule(r)
+		if !ok {
+			validationError = append(validationError, message)
+			r.ValidationErrors[name] = validationError
+		}
+	}
+}
+
+func (r *Request) Validate() error {
+	if len(r.ValidationErrors) > 0 {
+		err := ValidationError{}
+		err.ValidationErrors = r.ValidationErrors
+		return err
+	}
 	return nil
 }
