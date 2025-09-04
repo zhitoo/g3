@@ -12,24 +12,28 @@ go get github.com/zhitoo/g3
 package main
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/zhitoo/g3"
 )
 
+type User struct {
+	Name []string `form:"name"`
+	Age  int      `form:"age"`
+}
+
 func main() {
-	server := g3.New(":5500")
+	g := g3.New(":5500")
 
-	//middleware
-	g.Use(func(next g3.Controller) g3.Controller {
-		return func(r *g3.Request) (g3.Response, error) {
-			fmt.Println("👉 New Request received")
-			return next(r)
-		}
-	})
-
-	//route group
-	g.Group("/users", func() {
+	g.Group("/users/{id}", func() {
+		g.Use(func(next g3.Controller) g3.Controller {
+			return func(r *g3.Request) (g3.Response, error) {
+				fmt.Println("👉 New Request received From " + r.PathParams["id"])
+				return next(r)
+			}
+		})
 		g.Get("/", func(r *g3.Request) (g3.Response, error) {
 			response := g3.Response{}
 			response.Body = []byte("All Users")
@@ -37,27 +41,12 @@ func main() {
 		})
 	})
 
-	g.Get("/g3/{id?:^[0-9]*$}", func(r *g3.Request) (g3.Response, error) {
+	g.Get("/", func(r *g3.Request) (g3.Response, error) {
 		response := g3.Response{}
-		response.Body = []byte("Hello, G3!")
+		response.Body = []byte("Hello World")
+		fmt.Println("Query Param", r.Get("name"))
 		return response, nil
-
-	}).Get("/", func(r *g3.Request) (g3.Response, error) {
-		response := g3.Response{}
-		response.Body = []byte("Hello, World!")
-		return response, nil
-
-	})
-
-	//redirect
-	g.Get("/hello/{name}", func(r *g3.Request) (g3.Response, error) {
-		response := g3.Response{}
-
-		response.Redirect("/" + r.PathParams["name"], 301)
-
-		return response, nil
-	})
-	g.Post("/", func(r *g3.Request) (g3.Response, error) {
+	}).Post("/", func(r *g3.Request) (g3.Response, error) {
 		res := g3.Response{}
 
 		r.AddValidation("name", func(r *g3.Request) (bool, string) {
@@ -68,6 +57,23 @@ func main() {
 				}
 			} else {
 				return false, "name is required"
+			}
+			return true, ""
+		}).AddValidation("age", func(r *g3.Request) (bool, string) {
+			age, ok := r.PostParams["age"]
+			if ok {
+				ageNum, err := strconv.Atoi(age[0])
+				if err != nil {
+					return false, "age must be a valid number"
+				}
+				if ageNum < 12 {
+					return false, "age must gt than 12"
+				}
+				if ageNum > 75 {
+					return false, "age must st than 75"
+				}
+			} else {
+				return false, "age is required"
 			}
 			return true, ""
 		})
@@ -92,7 +98,23 @@ func main() {
 		return res, nil
 	})
 
-	log.Fatal(server.Serve())
+	g.Use(func(next g3.Controller) g3.Controller {
+		return func(r *g3.Request) (g3.Response, error) {
+			fmt.Println("👉 New Request received")
+			return next(r)
+		}
+	})
+
+	g.Get("/hello/{name}", func(r *g3.Request) (g3.Response, error) {
+		response := g3.Response{}
+
+		response.Redirect("/users/"+r.PathParams["name"], 301)
+
+		return response, nil
+	})
+	log.Fatal(g.Serve())
+
 }
+
 
 ```
