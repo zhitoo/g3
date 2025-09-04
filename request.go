@@ -190,7 +190,7 @@ func (r *Request) Bind(obj any) error {
 	return nil
 }
 
-func (r *Request) AddValidation(name string, rule func(r *Request) (bool, string)) {
+func (r *Request) AddValidation(name string, rule func(r *Request) (bool, string)) *Request {
 	validationError, ok := r.ValidationErrors[name]
 	if !ok {
 		r.ValidationErrors = map[string][]string{}
@@ -205,6 +205,8 @@ func (r *Request) AddValidation(name string, rule func(r *Request) (bool, string
 			r.ValidationErrors[name] = validationError
 		}
 	}
+
+	return r
 }
 
 func (r *Request) Validate() error {
