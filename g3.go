@@ -43,8 +43,6 @@ func (g3 *G3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	response, err := g3.runController(r)
 	if err != nil {
-		//todo: check for validation error or any other type of error
-		w.WriteHeader(response.statusCode)
 		var validationError ValidationError
 		if errors.As(err, &validationError) {
 			jsonResp, er := json.Marshal(validationError)
@@ -53,6 +51,7 @@ func (g3 *G3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(fmt.Sprintf("%v", er)))
 			}
 			response.Body = jsonResp
+			w.WriteHeader(response.statusCode)
 			w.Write(response.Body)
 			return
 		}

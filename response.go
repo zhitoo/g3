@@ -21,7 +21,7 @@ func (r *Response) SetBody(body []byte) *Response {
 func NewResponse() *Response {
 	response := Response{}
 	response.SetStatusCode(http.StatusOK)
-	return &Response{}
+	return &response
 }
 
 func (r *Response) String(body string) Response {
