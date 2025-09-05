@@ -1,6 +1,9 @@
 package g3
 
-import "net/http"
+import (
+	"encoding/json"
+	"net/http"
+)
 
 type Response struct {
 	Body       []byte
@@ -24,28 +27,29 @@ func NewResponse() *Response {
 	return &response
 }
 
-func (r *Response) String(body string) Response {
+func (r *Response) String(body string) (Response, error) {
 	r.Body = []byte(body)
 	r.SetHeader("Content-Type", "text/plain")
-	return *r
+	return *r, nil
 }
 
-func (r *Response) JSON(body []byte) Response {
-	r.Body = body
+func (r *Response) JSON(body any) (Response, error) {
+	result, err := json.Marshal(body)
+	r.Body = result
 	r.SetHeader("Content-Type", "application/json")
-	return *r
+	return *r, err
 }
 
-func (r *Response) HTML(body string) Response {
+func (r *Response) HTML(body string) (Response, error) {
 	r.Body = []byte(body)
 	r.SetHeader("Content-Type", "text/html")
-	return *r
+	return *r, nil
 }
 
-func (r *Response) XML(body string) Response {
+func (r *Response) XML(body string) (Response, error) {
 	r.Body = []byte(body)
 	r.SetHeader("Content-Type", "application/xml")
-	return *r
+	return *r, nil
 }
 
 func (r *Response) SetHeader(key, value string) *Response {
