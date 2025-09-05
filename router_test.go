@@ -11,7 +11,7 @@ func TestGetRoute(t *testing.T) {
 
 	g.Get("/hello", func(r *Request) (Response, error) {
 		response := NewResponse()
-		return response.String("world"), nil
+		return response.String("world")
 	})
 
 	req := httptest.NewRequest("GET", "/hello", nil)
@@ -32,7 +32,7 @@ func TestRouteWithParam(t *testing.T) {
 	g := New(":5500")
 
 	g.Get("/user/{id:[0-9]+}", func(r *Request) (Response, error) {
-		return NewResponse().String("id=" + r.PathParams["id"]), nil
+		return NewResponse().String("id=" + r.PathParams["id"])
 	})
 
 	req := httptest.NewRequest("GET", "/user/123", nil)
@@ -45,7 +45,7 @@ func TestRouteWithParam(t *testing.T) {
 	}
 
 	g.Get("/user/{id:[0-9]+}", func(r *Request) (Response, error) {
-		return NewResponse().String("id=" + r.PathParams["id"]), nil
+		return NewResponse().String("id=" + r.PathParams["id"])
 	})
 
 	req = httptest.NewRequest("GET", "/user/test", nil)
@@ -70,7 +70,7 @@ func TestMiddleware(t *testing.T) {
 	})
 
 	g.Get("/ping", func(r *Request) (Response, error) {
-		return NewResponse().String("world"), nil
+		return NewResponse().String("world")
 	})
 
 	req := httptest.NewRequest("GET", "/ping", nil)
