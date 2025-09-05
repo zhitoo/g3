@@ -25,7 +25,6 @@ type G3 struct {
 }
 
 func New(Addr string) *G3 {
-	fmt.Println("Creating...")
 	g3 := G3{}
 	g3.Addr = Addr
 	g3.Server.Handler = &g3
@@ -36,6 +35,7 @@ func New(Addr string) *G3 {
 
 func (g3 *G3) Serve() error {
 	g3.Server.Addr = g3.Addr
+	fmt.Println("Server running on " + g3.Addr)
 	return g3.Server.ListenAndServe()
 }
 
