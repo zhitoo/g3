@@ -73,5 +73,8 @@ func TestValidate(t *testing.T) {
 	if wErr.Code != http.StatusUnprocessableEntity {
 		t.Errorf("expected status 422, got %d", wErr.Code)
 	}
+	if wErr.Body.String() != "{\"validation_errors\":{\"name\":[\"name must at least be 5 chars\"]}}" {
+		t.Errorf("expected {\"validation_errors\":{\"name\":[\"name must at least be 5 chars\"]}} , got %s", wErr.Body.String())
+	}
 
 }
